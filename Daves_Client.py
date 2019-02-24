@@ -1,42 +1,44 @@
 #!/usr/bin/env python3
-"""Script for Tkinter GUI chat client."""
+"""Script for clients on Dave's secret chat"""
 from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread
-import tkinter
+import tkinter #Python's basic GUI Library
 
-
+#Handles receiving of messages
+#Infinite loop so we can receive messages at any time
+#Try block if client leaving causes an error
 def receive():
-    """Handles receiving of messages."""
     while True:
         try:
             msg = client_socket.recv(BUFSIZ).decode("utf8")
+            #msg_list is a Tkinter feature for displaying the list of messages on the screen.
             msg_list.insert(tkinter.END, msg)
-        except OSError:  # Possibly client has left the chat.
+        except OSError:
             break
 
-
-def send(event=None):  # event is passed by binders.
-    """Handles sending of messages."""
+#event is passed by binders.
+#Handles sending of messages
+    #Get's message from message box in GUI
+    #Clears message box
+def send(event=None):
     msg = my_msg.get()
-    my_msg.set("")  # Clears input field.
+    my_msg.set("")
     client_socket.send(bytes(msg, "utf8"))
     if msg == "{quit}":
         client_socket.close()
-        top.destroy()
-        #top.quit()
+        top.quit()
 
-
+#This function is called when user exist GUI
 def on_closing(event=None):
-    """This function is to be called when the window is closed."""
     my_msg.set("{quit}")
     send()
 
 top = tkinter.Tk()
-top.title("CryptoChat")
+top.title("Chatter")
 
 messages_frame = tkinter.Frame(top)
 my_msg = tkinter.StringVar()  # For the messages to be sent.
-my_msg.set("Type your messages here!")
+my_msg.set("Type your messages here.")
 scrollbar = tkinter.Scrollbar(messages_frame)  # To navigate through past messages.
 # Following will contain the messages.
 msg_list = tkinter.Listbox(messages_frame, height=15, width=50, yscrollcommand=scrollbar.set)
@@ -61,7 +63,7 @@ if not PORT:
 else:
     PORT = int(PORT)
 
-BUFSIZ = 1024
+BUFSIZ = 2048
 ADDR = (HOST, PORT)
 
 client_socket = socket(AF_INET, SOCK_STREAM)
@@ -70,3 +72,6 @@ client_socket.connect(ADDR)
 receive_thread = Thread(target=receive)
 receive_thread.start()
 tkinter.mainloop()  # Starts GUI execution.
+
+if __name__ == "__main__":
+        main()
