@@ -19,19 +19,19 @@ def accept_incoming_connections(SERVER, BUFSIZ):
     while True:
         client, client_address = SERVER.accept()
         print("%s:%s has connected." % client_address)
-        client.send(bytes("Welcome to the secret chat! \n Type a nickname and press enter!", "utf8"))
+        client.send(bytes("Welcome to the secret chat! Type a nickname and press Enter xD", "utf8"))
         addresses_bookkeeping[client] = client_address
         Thread(target=handle_client, args=(client,BUFSIZ,)).start()
+        print("Server Log: New incoming client IP Address is...", addresses_bookkeeping[client])
 
 #Input - Takes client socket as argument.
 #Output - New client chooses a nickname and added to chatroom, otherwise deleted client 
 def handle_client(client, BUFSIZ):
-    """Handles a single client connection."""
-
     Clients_Desired_Name = client.recv(BUFSIZ).decode("utf8")
-    Introduction = 'Whats up %s! If you wanna leave chat, type {quit}' % Clients_Desired_Name
+    Introduction = 'Whats up %s! To leave chat, type  {quit}' % Clients_Desired_Name
+    print("Server Log: The new client name is %s.", Clients_Desired_Name)
     client.send(bytes(Introduction, "utf8"))
-    server_message = "%s is a new secret member! \n Welcome him!" % Clients_Desired_Name
+    server_message = "%s is a new secret member!" % Clients_Desired_Name
     broadcast(bytes(server_message, "utf8"))
     Clients_bookkeeping[client] = Clients_Desired_Name
 
@@ -43,25 +43,25 @@ def handle_client(client, BUFSIZ):
             client.send(bytes("{quit}", "utf8"))
             client.close()
             del Clients_bookkeeping[client]
-            broadcast(bytes("%s has left the chat." % Clients_Desired_Name, "utf8"))
+            broadcast(bytes("%s has left Dave's Secret Chat." % Clients_Desired_Name, "utf8"))
             break
 
-
-def broadcast(msg, client_name=""):  # client_name is for name identification.
-    """Broadcasts a message to all the clients."""
-
+#client_name is for name identification.
+#Broadcasts a message to all the clients.
+def broadcast(msg, client_name=""):
     for member in Clients_bookkeeping:
         member.send(bytes(client_name, "utf8")+msg)
 
 def main():
         #Makes host avilable on any laptop that runs server code
         #set port number for convenience, and so restricted ports aren't chosen
+        #Initial security is clients must know port number to connect
         HOST = ''
         PORT = 33000
-        #BUFSIZ = 1024
         BUFSIZ = 2048
         ADDR = (HOST, PORT)
 
+        #Sets up Server Socket
         SERVER = socket(AF_INET, SOCK_STREAM)
         SERVER.bind(ADDR)
 

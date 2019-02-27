@@ -3,6 +3,9 @@
 from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread
 import tkinter #Python's basic GUI Library
+#from Crypto.PublicKey import RSA This is having issues
+
+
 
 #Handles receiving of messages
 #Infinite loop so we can receive messages at any time
@@ -10,9 +13,9 @@ import tkinter #Python's basic GUI Library
 def receive():
     while True:
         try:
-            msg = client_socket.recv(BUFSIZ).decode("utf8")
-            #msg_list is a Tkinter feature for displaying the list of messages on the screen.
-            msg_list.insert(tkinter.END, msg)
+            msg = client_container.recv(Buffer_size).decode("utf8")
+            #messages_list_box is a Tkinter feature for displaying the list of messages on the screen.
+            messages_list_box.insert(tkinter.END, msg)
         except OSError:
             break
 
@@ -21,57 +24,77 @@ def receive():
     #Get's message from message box in GUI
     #Clears message box
 def send(event=None):
-    msg = my_msg.get()
-    my_msg.set("")
-    client_socket.send(bytes(msg, "utf8"))
+    msg = individual_message.get()
+    
+    individual_message.set("")
+    client_container.send(bytes(msg, "utf8")) #previous working line
     if msg == "{quit}":
-        client_socket.close()
-        top.quit()
+        client_container.close()
+        main_tinker.quit()
 
 #This function is called when user exist GUI
 def on_closing(event=None):
-    my_msg.set("{quit}")
+    individual_message.set("{quit}")
     send()
 
-top = tkinter.Tk()
-top.title("Chatter")
 
-messages_frame = tkinter.Frame(top)
-my_msg = tkinter.StringVar()  # For the messages to be sent.
-my_msg.set("Type your messages here.")
-scrollbar = tkinter.Scrollbar(messages_frame)  # To navigate through past messages.
-# Following will contain the messages.
-msg_list = tkinter.Listbox(messages_frame, height=15, width=50, yscrollcommand=scrollbar.set)
-scrollbar.pack(side=tkinter.RIGHT, fill=tkinter.Y)
-msg_list.pack(side=tkinter.LEFT, fill=tkinter.BOTH)
-msg_list.pack()
-messages_frame.pack()
+'''----Now comes the Client Setup part----'''
+#IP Address can be any value, making this program available to a wider audience
+#Chosen port number that only official members have access too
+print("Welcome to Dave's Secret Chat App\n")
+IP = input('Enter IP: ')
+PORT_Number = input('Enter port_Number: ')
+if not PORT_Number:
+    PORT_Number = 33000
+else:
+    PORT_Number = int(PORT_Number)
 
-entry_field = tkinter.Entry(top, textvariable=my_msg)
-entry_field.bind("<Return>", send)
-entry_field.pack()
-send_button = tkinter.Button(top, text="Send", command=send)
+Buffer_size = 2048
+Address = (IP, PORT_Number)
+
+#Setting up Sockets for Clients
+#Using TCP because more secure
+client_container = socket(AF_INET, SOCK_STREAM)
+client_container.connect(Address)
+
+
+'''----Setting up GUI with members that are constantly updated----'''
+#By making global variables for Tinker GUI, functions are called on their own everytime a new client connects to server
+#Tinker allows for all communication to happen on GUI rather than terminal - a much cleaner look
+main_tinker = tkinter.Tk()
+main_tinker.title("Dave's Secret Chat")
+
+#Waits for message to be typed in input box
+#Initial type is nickname, the rest are texts
+messages_box = tkinter.Frame(main_tinker)
+individual_message = tkinter.StringVar()  # For the messages to be sent.
+individual_message.set("Type a message...")
+tinker_scrollbar = tkinter.Scrollbar(messages_box)  # To navigate through past messages.
+
+#Messages_list_box will contain the messages.
+#we then pack that onto our existing GUI
+'''messages_list_box = tkinter.Listbox(messages_box, height=15, width=50, yscrollcommand=tinker_scrollbar.set)'''
+messages_list_box = tkinter.Listbox(messages_box, height=35, width=75, yscrollcommand=tinker_scrollbar.set)
+tinker_scrollbar.pack(side=tkinter.RIGHT, fill=tkinter.Y)
+messages_list_box.pack(side=tkinter.LEFT, fill=tkinter.BOTH)
+messages_list_box.pack()
+messages_box.pack()
+
+#Text box where we type messages
+#Every return signals new message which is handled by "individual_message.get()"
+#Then message is broadcasted to rest of party
+input_box = tkinter.Entry(main_tinker, textvariable=individual_message)
+input_box.bind("<Return>", send)
+input_box.pack()
+send_button = tkinter.Button(main_tinker, text="Send", command=send)
 send_button.pack()
 
-top.protocol("WM_DELETE_WINDOW", on_closing)
+#Calls my on_closing function when the GUI application is exited out
+#Just a simple cleanup procedure
+main_tinker.protocol("WM_DELETE_WINDOW", on_closing)
 
-#----Now comes the sockets part----
-HOST = input('Enter host: ')
-PORT = input('Enter port: ')
-if not PORT:
-    PORT = 33000
-else:
-    PORT = int(PORT)
-
-BUFSIZ = 2048
-ADDR = (HOST, PORT)
-
-client_socket = socket(AF_INET, SOCK_STREAM)
-client_socket.connect(ADDR)
-
+# Starts Tinker GUI with multithreading
+#mainloop() is just Tkinter's event loop monitoring functionality
 receive_thread = Thread(target=receive)
 receive_thread.start()
-tkinter.mainloop()  # Starts GUI execution.
-
-if __name__ == "__main__":
-        main()
+tkinter.mainloop()
