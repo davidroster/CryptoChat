@@ -23,14 +23,33 @@ def receive():
 #Handles sending of messages
     #Get's message from message box in GUI
     #Clears message box
+Individual_Client_Messages = []
+def store_individual_client_messages():
+    #Stores all indiv. messages in list
+    #msg = individual_message.get()
+    #Individual_Client_Messages.append(msg)
+    client_name = Individual_Client_Messages[0]
+    with open('client_file.txt', 'w') as f:
+        for item in Individual_Client_Messages:
+            f.write(client_name + " : %s\n" % item)
+            print("In the for loop")
+        print("on the edge of the for loop")
+        f.close()
+        print("after the close statements")
+    print("on edge of function")
+    return None
+
+
 def send(event=None):
     msg = individual_message.get()
-    
+    Individual_Client_Messages.append(msg)
     individual_message.set("")
     client_container.send(bytes(msg, "utf8")) #previous working line
     if msg == "{quit}":
         client_container.close()
         main_tinker.quit()
+
+    store_individual_client_messages()
 
 #This function is called when user exist GUI
 def on_closing(event=None):
