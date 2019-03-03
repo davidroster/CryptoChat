@@ -1,3 +1,1 @@
-aram : aram
-aram : this is dope
-aram : run it home now
+{quit} : {quit}

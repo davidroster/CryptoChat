@@ -3,9 +3,12 @@
 from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread
 import tkinter #Python's basic GUI Library
-#from Crypto.PublicKey import RSA This is having issues
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import AES, PKCS1_OAEP
+from Crypto.Random import get_random_bytes
+import base64
 
-
+    
 
 #Handles receiving of messages
 #Infinite loop so we can receive messages at any time
@@ -32,19 +35,20 @@ def store_individual_client_messages():
     with open('client_file.txt', 'w') as f:
         for item in Individual_Client_Messages:
             f.write(client_name + " : %s\n" % item)
-            print("In the for loop")
-        print("on the edge of the for loop")
         f.close()
-        print("after the close statements")
-    print("on edge of function")
     return None
+
 
 
 def send(event=None):
     msg = individual_message.get()
     Individual_Client_Messages.append(msg)
     individual_message.set("")
-    client_container.send(bytes(msg, "utf8")) #previous working line
+
+    sec_msg = SEC.encrypt(msg)
+    #print(type(sec_msg))
+    client_container.send(sec_msg)
+    #client_container.send(bytes(msg, "utf8")) #previous working line
     if msg == "{quit}":
         client_container.close()
         main_tinker.quit()
@@ -75,6 +79,13 @@ Address = (IP, PORT_Number)
 #Using TCP because more secure
 client_container = socket(AF_INET, SOCK_STREAM)
 client_container.connect(Address)
+RSA_PUB = client_container.recv(Buffer_size)
+cipher  = PKCS1_OAEP.new(RSA.importKey(RSA_PUB))
+#AES_sec = base64.b64encode(get_random_bytes(32)).decode('utf-8')
+SEC = get_random_bytes(32)
+encrypted_sec_key = cipher.encrypt(SEC) #use this to encrypt/decrypt data
+
+client_container.send(encrypted_sec_key)
 
 
 '''----Setting up GUI with members that are constantly updated----'''
