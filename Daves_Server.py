@@ -24,8 +24,6 @@ def target_main(SERVER,Buffer_Size):
 
 
 
-
-
 #Input - Takes in no arguements
 #Output - Waits for incoming connections, stores client info, starts thread 
 def accept_incoming_connections(SERVER, Buffer_Size):
@@ -46,9 +44,11 @@ def crypto(client, Buffer_Size, client_address):
     client.send(public_key)
     shared_private_key = client.recv(Buffer_Size)
 
-    cipher_rsa = PKCS1_OAEP.new(private_key)
+    #cipher_rsa = PKCS1_OAEP.new(private_key)
+    cipher_rsa = PKCS1_OAEP.new(RSA_KEYPAIR)
     SEC_sessionkey = cipher_rsa.decrypt(shared_private_key)
     SessionKeys_bookkeeping[client_address] = SEC_sessionkey
+    print ("Sessionkeys is ..." + SessionKeys_bookkeeping[client_address])
     
 
 
@@ -68,22 +68,48 @@ def handle_client(client, Buffer_Size):
     broadcast(bytes(server_message, "utf8"))
     Clients_bookkeeping[client] = Clients_Desired_Name
 
+   
+
     while True:
-        msg = client.recv(Buffer_Size)
+        sec_msg = client.recv(Buffer_Size)
+        client_key = SessionKeys_bookkeeping[Clients_Desired_Name]
+        msg = client_key.decrypt(sec_msg)
+
         if msg != bytes("{quit}", "utf8"):
-            broadcast(msg, Clients_Desired_Name+": ")
+            #broadcast(msg, Clients_Desired_Name+": ")
+            broadcast(msg, Clients_Desired_Name)
         else:
             client.send(bytes("{quit}", "utf8"))
             client.close()
             del Clients_bookkeeping[client]
+            del SessionKeys_bookkeeping[Clients_Desired_Name]
             broadcast(bytes("%s has left Dave's Secret Chat." % Clients_Desired_Name, "utf8"))
             break
 
+        # msg = client.recv(Buffer_Size)
+        # if msg != bytes("{quit}", "utf8"):
+        #     broadcast(msg, Clients_Desired_Name+": ")
+        # else:
+        #     client.send(bytes("{quit}", "utf8"))
+        #     client.close()
+        #     del Clients_bookkeeping[client]
+        #     broadcast(bytes("%s has left Dave's Secret Chat." % Clients_Desired_Name, "utf8"))
+        #     break
+
+
+
 #client_name is for name identification.
 #Broadcasts a message to all the clients.
-def broadcast(msg, client_name=""):
+#def broadcast(msg, client_name=""):
+def broadcast(msg, client_name):
+    '''
     for member in Clients_bookkeeping:
         member.send(bytes(client_name, "utf8")+msg)
+    '''
+    for member in SessionKeys_bookkeeping:
+        sec_key = SessionKeys_bookkeeping[client_name]
+        sec_msg = sec_key.encrypt(msg)
+        member.send(bytes(client_name, "utf8")+sec_msg)
 
 def main():
         #Makes host avilable on any laptop that runs server code

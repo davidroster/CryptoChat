@@ -18,6 +18,8 @@ def receive():
         try:
             msg = client_container.recv(Buffer_size).decode("utf8")
             #messages_list_box is a Tkinter feature for displaying the list of messages on the screen.
+            msg_format = ": " + msg
+            #messages_list_box.insert(tkinter.END, msg)
             messages_list_box.insert(tkinter.END, msg)
         except OSError:
             break
@@ -45,7 +47,7 @@ def send(event=None):
     Individual_Client_Messages.append(msg)
     individual_message.set("")
 
-    sec_msg = SEC.encrypt(msg)
+    sec_msg = encrypted_sec_key.encrypt(msg)
     #print(type(sec_msg))
     client_container.send(sec_msg)
     #client_container.send(bytes(msg, "utf8")) #previous working line
